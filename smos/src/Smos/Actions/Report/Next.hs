@@ -2,6 +2,7 @@
 
 module Smos.Actions.Report.Next where
 
+import Smos.Actions.Browser
 import Smos.Actions.File
 import Smos.Actions.Utils
 import Smos.Report.Config
@@ -140,4 +141,28 @@ selectNextActionFilter =
     { actionName = "selectNextActionFilter",
       actionDescription = "Select the next action filter bar",
       actionFunc = modifyNextActionReportCursorM nextActionReportCursorSelectFilter
+    }
+
+
+-- Exit the Next Action Report
+-- If there is a file open, go to it (this already works?)
+-- If there is no file open, go to the browser in the workflow dir
+exitNextActionReport :: Action
+exitNextActionReport =
+  Action
+    { actionName = "exitNextActionReport",
+      actionDescription = "Exit smos from the next action report screen",
+      actionFunc = do
+        ec <- gets smosStateCursor
+        if editorCursorSelection ec == HelpSelected
+          then case editorCursorFileCursor ec of
+            Just _ -> modifyEditorCursor $ editorCursorSelect FileSelected
+            Nothing -> case editorCursorLastOpenedFile ec of
+              Just fp -> switchToFile fp
+              Nothing -> case editorCursorBrowserCursor ec of
+                Just _ -> modifyEditorCursor $ editorCursorSelect BrowserSelected
+                Nothing -> case editorCursorReportCursor ec of
+                  Just _ -> modifyEditorCursor $ editorCursorSelect ReportSelected
+                  Nothing -> actionFunc selectBrowserWorkflow
+          else pure ()
     }

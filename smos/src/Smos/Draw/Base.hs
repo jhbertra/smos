@@ -74,13 +74,6 @@ pointerChar = '❯'
 drawTable :: [[Widget n]] -> Widget n
 drawTable = hBox . intersperse (str " ") . map vBox . transpose
 
-drawHeader :: Header -> Widget n
-drawHeader = withAttr headerAttr . textLineWidget . headerText
-
-drawTodoState :: TodoState -> Widget n
-drawTodoState ts =
-  withAttr (todoStateSpecificAttr ts <> todoStateAttr) . textLineWidget $ todoStateText ts
-
 drawFilePath :: Path b File -> Widget n
 drawFilePath fp =
   case fileExtension fp of

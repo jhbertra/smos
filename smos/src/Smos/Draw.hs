@@ -41,6 +41,7 @@ import Smos.Cursor.SmosFileEditor
 import Smos.Cursor.Tag
 import Smos.Data
 import Smos.Draw.Base
+import Smos.Draw.Data
 import Smos.Draw.Report
 import Smos.History
 import Smos.Keys
@@ -656,37 +657,6 @@ drawFuzzyLocalTimeCursor s fdc@FuzzyLocalTimeCursor {..} = do
         intersperse (str " ") $
           drawTextCursor s fuzzyLocalTimeCursorTextCursor :
             [hBox [str "(", dw, str ")"] | MaybeSelected <- [s]]
-
-drawTimestampName :: TimestampName -> Widget n
-drawTimestampName tsn =
-  withAttr (timestampNameSpecificAttr tsn <> timestampNameAttr) . textLineWidget $
-    timestampNameText tsn
-
-drawTimestamp :: Timestamp -> Drawer
-drawTimestamp ts =
-  case ts of
-    TimestampDay d -> drawDay d
-    TimestampLocalTime lt -> drawLocalTime lt
-
-drawDay :: Day -> Drawer
-drawDay d = do
-  zt <- ask
-  pure $
-    hBox
-      [ str $ formatTimestampDay d,
-        str ", ",
-        str $ prettyDayAuto (localDay $ zonedTimeToLocalTime zt) d
-      ]
-
-drawLocalTime :: LocalTime -> Drawer
-drawLocalTime lt = do
-  zt@(ZonedTime _ tz) <- ask
-  pure $
-    hBox
-      [ str $ formatTimestampLocalTime lt,
-        str ", ",
-        str $ prettyTimeAuto (zonedTimeToUTC zt) $ localTimeToUTC tz lt
-      ]
 
 drawPropertiesCursor :: Select -> PropertiesCursor -> Widget ResourceName
 drawPropertiesCursor s =

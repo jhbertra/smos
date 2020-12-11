@@ -1,4 +1,5 @@
 {-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE MultiWayIf #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE RecordWildCards #-}
@@ -14,12 +15,14 @@ import Cursor.Brick
 import Data.List
 import qualified Data.Map as M
 import Data.Text (Text)
+import qualified Data.Text as T
 import Data.Time
 import Lens.Micro
 import Path
 import Smos.Actions
 import Smos.Data
 import Smos.Draw.Base
+import Smos.Draw.Data
 import Smos.Report.Agenda
 import Smos.Report.Filter
 import Smos.Report.Formatting
@@ -28,6 +31,7 @@ import Smos.Report.Waiting
 import Smos.Report.Work
 import Smos.Style
 import Smos.Types
+import Text.Time.Pretty
 
 drawReportCursor :: Select -> ReportCursor -> Drawer
 drawReportCursor s = \case
@@ -136,9 +140,11 @@ drawWorkReportCursor _ (WorkReportCursor WorkReport {..}) = do
             ]
         ]
   pure $
-    vBox $
-      concat $
-        intercalate [spacer] pieces
+    withHeading (str "Work Report") $
+      padAll 1 $
+        vBox $
+          concat $
+            intercalate [spacer] pieces
   where
     unlessNull :: Foldable l => l e -> [a] -> [a]
     unlessNull l r =
@@ -172,7 +178,31 @@ drawWaitingEntryCursor now s WaitingEntryCursor {..} =
       ]
 
 drawAgendaEntry :: ZonedTime -> AgendaEntry -> [Widget n]
-drawAgendaEntry zt ae@AgendaEntry {..} = [str (show ae)]
+drawAgendaEntry now AgendaEntry {..} =
+  let tz = zonedTimeZone now
+      d = diffDays (timestampDay agendaEntryTimestamp) (localDay $ zonedTimeToLocalTime now)
+      func =
+        if
+            | d <= 0 && agendaEntryTimestampName == "DEADLINE" -> withAttr agendaEntryDeadlinePast
+            | d == 1 && agendaEntryTimestampName == "DEADLINE" -> withAttr agendaEntryDeadlineToday
+            | d <= 10 && agendaEntryTimestampName == "DEADLINE" -> withAttr agendaEntryDeadlineSoon
+            | d < 0 && agendaEntryTimestampName == "SCHEDULED" -> withAttr agendaEntryScheduledPast
+            | d == 0 && agendaEntryTimestampName == "SCHEDULED" -> withAttr agendaEntryScheduledToday
+            | otherwise -> id
+   in [ func $ txt $ timestampPrettyText agendaEntryTimestamp,
+        func $
+          txt $
+            T.pack $
+              renderTimeAgoAuto $
+                timeAgo $
+                  diffUTCTime
+                    (zonedTimeToUTC now)
+                    (localTimeToUTC tz $ timestampLocalTime agendaEntryTimestamp),
+        drawTimestampName agendaEntryTimestampName,
+        maybe emptyWidget drawTodoState agendaEntryTodoState,
+        drawHeader agendaEntryHeader,
+        func $ drawFilePath agendaEntryFilePath
+      ]
 
 daysSinceWidget :: Word -> UTCTime -> UTCTime -> Widget n
 daysSinceWidget threshold now t = withAttr style $ str $ show i <> " days"

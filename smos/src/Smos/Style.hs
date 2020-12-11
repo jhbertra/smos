@@ -26,6 +26,12 @@ module Smos.Style
     waitingReportNoWait,
     workReportSectionAttr,
     workReportWarningAttr,
+    agendaEntryDeadlinePast,
+    agendaEntryDeadlineToday,
+    agendaEntryDeadlineSoon,
+    agendaEntryScheduledPast,
+    agendaEntryScheduledToday,
+    agendaEntryPrettyTimestamp,
     helpNameAttr,
     helpKeyCombinationAttr,
     helpDescriptionAttr,
@@ -74,6 +80,12 @@ defaultAttrMap _ =
           (waitingReportNoWait, fg green),
           (workReportSectionAttr, withStyle (fg white) underline),
           (workReportWarningAttr, withStyle (fg red) underline),
+          (agendaEntryDeadlinePast, fg red),
+          (agendaEntryDeadlineToday, brightRed `B.on` black),
+          (agendaEntryDeadlineSoon, fg yellow),
+          (agendaEntryScheduledPast, fg red),
+          (agendaEntryScheduledToday, fg green),
+          (agendaEntryPrettyTimestamp, withStyle defAttr bold),
           (selectedAttr <> tagAttr, fg brightWhite),
           (selectedAttr <> headerAttr, fg brightWhite),
           (fileAttr, fg V.yellow),
@@ -164,6 +176,24 @@ workReportSectionAttr = "work-report-section"
 
 workReportWarningAttr :: AttrName
 workReportWarningAttr = "work-report-warning"
+
+agendaEntryDeadlinePast :: AttrName
+agendaEntryDeadlinePast = "agenda-entry-DEADLINE-past"
+
+agendaEntryDeadlineToday :: AttrName
+agendaEntryDeadlineToday = "agenda-entry-DEADLINE-today"
+
+agendaEntryDeadlineSoon :: AttrName
+agendaEntryDeadlineSoon = "agenda-entry-DEADLINE-soon"
+
+agendaEntryScheduledPast :: AttrName
+agendaEntryScheduledPast = "agenda-entry-SCHEDULED-past"
+
+agendaEntryScheduledToday :: AttrName
+agendaEntryScheduledToday = "agenda-entry-SCHEDULED-today"
+
+agendaEntryPrettyTimestamp :: AttrName
+agendaEntryPrettyTimestamp = "agenda-entry-pretty-timestamp"
 
 helpNameAttr :: AttrName
 helpNameAttr = "helpdescription"

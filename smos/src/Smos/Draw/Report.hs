@@ -11,14 +11,21 @@ where
 import Brick.Types as B
 import Brick.Widgets.Core as B
 import Cursor.Brick
+import Data.List
+import qualified Data.Map as M
+import Data.Text (Text)
 import Data.Time
 import Lens.Micro
 import Path
 import Smos.Actions
 import Smos.Data
 import Smos.Draw.Base
+import Smos.Report.Agenda
 import Smos.Report.Filter
 import Smos.Report.Formatting
+import Smos.Report.Stuck
+import Smos.Report.Waiting
+import Smos.Report.Work
 import Smos.Style
 import Smos.Types
 
@@ -76,7 +83,81 @@ drawWaitingReportCursor s WaitingReportCursor {..} = do
             Just wecs -> verticalNonEmptyCursorTable (go NotSelected) (go s) (go NotSelected) wecs
 
 drawWorkReportCursor :: Select -> WorkReportCursor -> Drawer
-drawWorkReportCursor _ wrc = pure $ str $ show wrc
+drawWorkReportCursor _ (WorkReportCursor WorkReport {..}) = do
+  now <- ask
+  let agendaTable :: Widget n
+      agendaTable = formatAsTable $ map (drawAgendaEntry now) workReportAgendaEntries
+      waitingTable :: Widget n
+      waitingTable = formatAsTable $ map (formatWaitingEntry (zonedTimeToUTC now)) workReportOverdueWaiting
+      stuckTable :: Widget n
+      stuckTable = formatAsTable $ map (formatStuckReportEntry (zonedTimeToUTC now)) workReportOverdueStuck
+      ctxs = [] -- Get the contexts from my config
+      pieces :: [[[Widget n]]]
+      pieces =
+        [ unlessNull
+            workReportNextBegin
+            [ sectionHeading "Next meeting:",
+              [formatAsTable $ maybe [] ((: []) . drawAgendaEntry now) workReportNextBegin]
+            ],
+          unlessNull
+            workReportAgendaEntries
+            [ sectionHeading "Deadlines:",
+              [agendaTable]
+            ],
+          unlessNull
+            workReportResultEntries
+            [ sectionHeading "Next actions:",
+              [entryTable workReportResultEntries]
+            ],
+          unlessNull
+            workReportOverdueWaiting
+            [ warningHeading "Overdue Waiting Entries:",
+              [waitingTable]
+            ],
+          unlessNull
+            workReportOverdueStuck
+            [ warningHeading "Overdue Stuck Reports:",
+              [stuckTable]
+            ],
+          unlessNull
+            ctxs
+            $ unlessNull
+              workReportEntriesWithoutContext
+              [ warningHeading "WARNING, the following Entries don't match any context:",
+                [entryTable workReportEntriesWithoutContext]
+              ],
+          unlessNull
+            workReportCheckViolations
+            [ warningHeading "WARNING, the following Entries did not pass the checks:",
+              concat $
+                flip concatMap (M.toList workReportCheckViolations) $
+                  \(f, violations) ->
+                    unlessNull violations [warningHeading (renderFilter f), [entryTable violations]]
+            ]
+        ]
+  pure $
+    vBox $
+      concat $
+        intercalate [spacer] pieces
+  where
+    unlessNull :: Foldable l => l e -> [a] -> [a]
+    unlessNull l r =
+      if null l
+        then []
+        else r
+    spacer = [str " "]
+    sectionHeading :: Text -> [Widget n]
+    sectionHeading t = [withAttr workReportSectionAttr $ txt t]
+    warningHeading :: Text -> [Widget n]
+    warningHeading t = [withAttr workReportWarningAttr $ txt t]
+    -- Get these thresholds from my config
+    formatWaitingEntry :: UTCTime -> WaitingEntry -> [Widget n]
+    formatWaitingEntry _ we = [str (show we)]
+    formatStuckReportEntry :: UTCTime -> StuckReportEntry -> [Widget n]
+    formatStuckReportEntry _ se = [str (show se)]
+    formatAsTable :: [[Widget n]] -> Widget n
+    formatAsTable = tableWidget
+    entryTable = str . show
 
 drawWaitingEntryCursor :: UTCTime -> Select -> WaitingEntryCursor -> [Widget ResourceName]
 drawWaitingEntryCursor now s WaitingEntryCursor {..} =
@@ -89,6 +170,9 @@ drawWaitingEntryCursor now s WaitingEntryCursor {..} =
         sel $ drawHeader $ entryHeader $ forestCursorCurrent waitingEntryCursorForestCursor,
         daysSinceWidget 7 now waitingEntryCursorTimestamp
       ]
+
+drawAgendaEntry :: ZonedTime -> AgendaEntry -> [Widget n]
+drawAgendaEntry zt ae@AgendaEntry {..} = [str (show ae)]
 
 daysSinceWidget :: Word -> UTCTime -> UTCTime -> Widget n
 daysSinceWidget threshold now t = withAttr style $ str $ show i <> " days"

@@ -59,6 +59,7 @@ currentKeyMappings KeyMap {..} EditorCursor {..} =
           Nothing -> []
           Just rc ->
             let ReportsKeyMap {..} = keyMapReportsKeyMap
+                ReportsKeyMap _ _ _ _ = undefined
                 reportsAnys = map ((,) AnyMatcher) reportsKeymapAnyMatchers
              in (++ reportsAnys) $ case rc of
                   ReportNextActions NextActionReportCursor {..} ->

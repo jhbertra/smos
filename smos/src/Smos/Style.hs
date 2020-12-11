@@ -24,6 +24,8 @@ module Smos.Style
     waitingReportMidWait,
     waitingReportShortWait,
     waitingReportNoWait,
+    workReportSectionAttr,
+    workReportWarningAttr,
     helpNameAttr,
     helpKeyCombinationAttr,
     helpDescriptionAttr,
@@ -70,6 +72,8 @@ defaultAttrMap _ =
           (waitingReportMidWait, fg yellow),
           (waitingReportShortWait, fg blue),
           (waitingReportNoWait, fg green),
+          (workReportSectionAttr, withStyle (fg white) underline),
+          (workReportWarningAttr, withStyle (fg red) underline),
           (selectedAttr <> tagAttr, fg brightWhite),
           (selectedAttr <> headerAttr, fg brightWhite),
           (fileAttr, fg V.yellow),
@@ -154,6 +158,12 @@ waitingReportShortWait = "waiting-report-short-wait"
 
 waitingReportNoWait :: AttrName
 waitingReportNoWait = "waiting-report-no-wait"
+
+workReportSectionAttr :: AttrName
+workReportSectionAttr = "work-report-section"
+
+workReportWarningAttr :: AttrName
+workReportWarningAttr = "work-report-warning"
 
 helpNameAttr :: AttrName
 helpNameAttr = "helpdescription"

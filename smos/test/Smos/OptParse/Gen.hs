@@ -37,6 +37,10 @@ instance GenValid WaitingReportKeyConfigs where
   genValid = genValidStructurally
   shrinkValid = shrinkValidStructurally
 
+instance GenValid WorkReportKeyConfigs where
+  genValid = genValidStructurally
+  shrinkValid = shrinkValidStructurally
+
 instance GenValid HelpKeyConfigs where
   genValid = genValidStructurally
   shrinkValid = shrinkValidStructurally

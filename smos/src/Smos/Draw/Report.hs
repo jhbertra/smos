@@ -26,6 +26,7 @@ drawReportCursor :: Select -> ReportCursor -> Drawer
 drawReportCursor s = \case
   ReportNextActions narc -> pure $ drawNextActionReportCursor s narc
   ReportWaiting wrc -> drawWaitingReportCursor s wrc
+  ReportWork wrc -> drawWorkReportCursor s wrc
 
 drawNextActionReportCursor :: Select -> NextActionReportCursor -> Widget ResourceName
 drawNextActionReportCursor s NextActionReportCursor {..} =
@@ -73,6 +74,9 @@ drawWaitingReportCursor s WaitingReportCursor {..} = do
           case waitingReportCursorWaitingEntryCursors of
             Nothing -> txtWrap "Empty waiting report"
             Just wecs -> verticalNonEmptyCursorTable (go NotSelected) (go s) (go NotSelected) wecs
+
+drawWorkReportCursor :: Select -> WorkReportCursor -> Drawer
+drawWorkReportCursor _ wrc = pure $ str $ show wrc
 
 drawWaitingEntryCursor :: UTCTime -> Select -> WaitingEntryCursor -> [Widget ResourceName]
 drawWaitingEntryCursor now s WaitingEntryCursor {..} =

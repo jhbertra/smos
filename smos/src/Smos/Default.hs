@@ -282,6 +282,7 @@ defaultReportsKeyMap =
   ReportsKeyMap
     { reportsKeymapNextActionReportKeyMap = defaultNextActionReportKeyMap,
       reportsKeymapWaitingReportKeyMap = defaultWaitingReportKeyMap,
+      reportsKeymapWorkReportKeyMap = defaultWorkReportKeyMap,
       reportsKeymapAnyMatchers =
         listMatchers
           [ exactChar 'q' selectEditor
@@ -333,6 +334,15 @@ defaultWaitingReportKeyMap =
       waitingReportAnyMatchers = listMatchers []
     }
 
+defaultWorkReportKeyMap :: WorkReportKeyMap
+defaultWorkReportKeyMap =
+  WorkReportKeyMap
+    { workReportMatchers =
+        listMatchers
+          [],
+      workReportAnyMatchers = listMatchers []
+    }
+
 defaultHelpKeyMap :: HelpKeyMap
 defaultHelpKeyMap =
   HelpKeyMap
@@ -380,5 +390,6 @@ defaultAnyKeyMap =
       exactString "bs" selectBrowserSide,
       -- Reports
       exactString "rn" reportNextActions,
-      exactString "rw" reportWaiting
+      exactString "rw" reportWaiting,
+      exactString "rr" reportWork
     ]

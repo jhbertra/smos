@@ -25,6 +25,7 @@ module Smos.Actions.Utils
     module Smos.Cursor.Properties,
     module Smos.Cursor.Report.Next,
     module Smos.Cursor.Report.Waiting,
+    module Smos.Cursor.Report.Work,
     module Smos.Cursor.SmosFile,
     module Smos.Cursor.StateHistory,
     module Smos.Cursor.Tags,
@@ -45,6 +46,7 @@ import Smos.Cursor.Logbook
 import Smos.Cursor.Properties
 import Smos.Cursor.Report.Next
 import Smos.Cursor.Report.Waiting
+import Smos.Cursor.Report.Work
 import Smos.Cursor.SmosFile
 import Smos.Cursor.SmosFileEditor
 import Smos.Cursor.StateHistory
@@ -333,6 +335,20 @@ modifyWaitingReportCursorS ::
 modifyWaitingReportCursorS func =
   modifyReportCursorS $ \rc -> case rc of
     ReportWaiting narc -> ReportWaiting <$> func narc
+    _ -> pure rc
+
+modifyWorkReportCursorM ::
+  (WorkReportCursor -> Maybe WorkReportCursor) -> SmosM ()
+modifyWorkReportCursorM func = modifyWorkReportCursor $ \hc -> fromMaybe hc $ func hc
+
+modifyWorkReportCursor :: (WorkReportCursor -> WorkReportCursor) -> SmosM ()
+modifyWorkReportCursor func = modifyWorkReportCursorS $ pure . func
+
+modifyWorkReportCursorS ::
+  (WorkReportCursor -> SmosM WorkReportCursor) -> SmosM ()
+modifyWorkReportCursorS func =
+  modifyReportCursorS $ \rc -> case rc of
+    ReportWork narc -> ReportWork <$> func narc
     _ -> pure rc
 
 modifyNextActionReportCursorM ::

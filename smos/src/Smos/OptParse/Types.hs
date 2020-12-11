@@ -226,6 +226,7 @@ backToBrowserKeyConfigs BrowserKeyMap {..} =
 data ReportsKeyConfigs = ReportsKeyConfigs
   { nextActionReportKeyConfigs :: Maybe NextActionReportKeyConfigs,
     waitingReportKeyConfigs :: Maybe WaitingReportKeyConfigs,
+    workReportKeyConfigs :: Maybe WorkReportKeyConfigs,
     anyReportKeyConfigs :: Maybe KeyConfigs
   }
   deriving (Show, Eq, Generic)
@@ -234,10 +235,11 @@ instance Validity ReportsKeyConfigs
 
 instance ToJSON ReportsKeyConfigs where
   toJSON ReportsKeyConfigs {..} =
-    let ReportsKeyConfigs _ _ _ = undefined
+    let ReportsKeyConfigs _ _ _ _ = undefined
      in object
           [ "next-action" .= nextActionReportKeyConfigs,
             "waiting" .= waitingReportKeyConfigs,
+            "work" .= workReportKeyConfigs,
             "any" .= anyReportKeyConfigs
           ]
 
@@ -250,14 +252,16 @@ instance YamlSchema ReportsKeyConfigs where
       ReportsKeyConfigs
         <$> optionalField "next-action" "Keybindings for the interactive next action report"
         <*> optionalField "waiting" "Keybindings for the interactive waiting report"
+        <*> optionalField "work" "Keybindings for the interactive work report"
         <*> optionalField "any" "Keybindings for at any point in any report"
 
 backToReportsKeyConfig :: ReportsKeyMap -> ReportsKeyConfigs
 backToReportsKeyConfig ReportsKeyMap {..} =
-  let ReportsKeyMap _ _ _ = undefined
+  let ReportsKeyMap _ _ _ _ = undefined
    in ReportsKeyConfigs
         { nextActionReportKeyConfigs = Just $ backToNextActionReportKeyConfigs reportsKeymapNextActionReportKeyMap,
           waitingReportKeyConfigs = Just $ backToWaitingReportKeyConfigs reportsKeymapWaitingReportKeyMap,
+          workReportKeyConfigs = Just $ backToWorkReportKeyConfigs reportsKeymapWorkReportKeyMap,
           anyReportKeyConfigs = Just $ backToKeyConfigs reportsKeymapAnyMatchers
         }
 
@@ -331,6 +335,40 @@ backToWaitingReportKeyConfigs WaitingReportKeyMap {..} =
    in WaitingReportKeyConfigs
         { waitingReportNormalKeyConfigs = Just $ backToKeyConfigs waitingReportMatchers,
           waitingReportAnyKeyConfigs = Just $ backToKeyConfigs waitingReportAnyMatchers
+        }
+
+data WorkReportKeyConfigs = WorkReportKeyConfigs
+  { workReportNormalKeyConfigs :: !(Maybe KeyConfigs),
+    workReportAnyKeyConfigs :: !(Maybe KeyConfigs)
+  }
+  deriving (Show, Eq, Generic)
+
+instance Validity WorkReportKeyConfigs
+
+instance ToJSON WorkReportKeyConfigs where
+  toJSON WorkReportKeyConfigs {..} =
+    let WorkReportKeyConfigs _ _ = undefined
+     in object
+          [ "normal" .= workReportNormalKeyConfigs,
+            "any" .= workReportAnyKeyConfigs
+          ]
+
+instance FromJSON WorkReportKeyConfigs where
+  parseJSON = viaYamlSchema
+
+instance YamlSchema WorkReportKeyConfigs where
+  yamlSchema =
+    objectParser "WorkReportKeyConfigs" $
+      WorkReportKeyConfigs
+        <$> optionalField "normal" "Keybindings for interacting with the next-action report"
+        <*> optionalField "any" "Keybindings for at any point in the next action report"
+
+backToWorkReportKeyConfigs :: WorkReportKeyMap -> WorkReportKeyConfigs
+backToWorkReportKeyConfigs WorkReportKeyMap {..} =
+  let WorkReportKeyMap _ _ = undefined
+   in WorkReportKeyConfigs
+        { workReportNormalKeyConfigs = Just $ backToKeyConfigs workReportMatchers,
+          workReportAnyKeyConfigs = Just $ backToKeyConfigs workReportAnyMatchers
         }
 
 data HelpKeyConfigs = HelpKeyConfigs

@@ -20,6 +20,7 @@ module Smos.Actions
     module Smos.Actions.Report,
     module Smos.Actions.Report.Next,
     module Smos.Actions.Report.Waiting,
+    module Smos.Actions.Report.Work,
     module Smos.Actions.Undo,
     module Smos.Actions.Utils,
   )
@@ -40,6 +41,7 @@ import Smos.Actions.Help
 import Smos.Actions.Report
 import Smos.Actions.Report.Next
 import Smos.Actions.Report.Waiting
+import Smos.Actions.Report.Work
 import Smos.Actions.Undo
 import Smos.Actions.Utils
 import Smos.Types

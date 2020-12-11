@@ -19,6 +19,7 @@ module Smos.Config
     ReportsKeyMap (..),
     NextActionReportKeyMap (..),
     WaitingReportKeyMap (..),
+    WorkReportKeyMap (..),
     HelpKeyMap (..),
     KeyMapping (..),
     KeyMappings,

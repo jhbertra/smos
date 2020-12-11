@@ -35,6 +35,7 @@ import Smos.Cursor.Entry
 import Smos.Cursor.FileBrowser
 import Smos.Cursor.Report.Next
 import Smos.Cursor.Report.Waiting
+import Smos.Cursor.Report.Work
 import Smos.Cursor.SmosFile
 import Smos.Cursor.SmosFileEditor
 import Smos.Keys
@@ -201,36 +202,42 @@ instance Monoid BrowserKeyMap where
 data ReportsKeyMap = ReportsKeyMap
   { reportsKeymapNextActionReportKeyMap :: !NextActionReportKeyMap,
     reportsKeymapWaitingReportKeyMap :: !WaitingReportKeyMap,
+    reportsKeymapWorkReportKeyMap :: !WorkReportKeyMap,
     reportsKeymapAnyMatchers :: !KeyMappings
   }
   deriving (Generic)
 
 instance Semigroup ReportsKeyMap where
   rkm1 <> rkm2 =
-    let ReportsKeyMap _ _ _ = undefined
+    let ReportsKeyMap _ _ _ _ = undefined
      in ReportsKeyMap
           { reportsKeymapNextActionReportKeyMap =
               reportsKeymapNextActionReportKeyMap rkm1 <> reportsKeymapNextActionReportKeyMap rkm2,
             reportsKeymapWaitingReportKeyMap =
               reportsKeymapWaitingReportKeyMap rkm1 <> reportsKeymapWaitingReportKeyMap rkm2,
+            reportsKeymapWorkReportKeyMap =
+              reportsKeymapWorkReportKeyMap rkm1 <> reportsKeymapWorkReportKeyMap rkm2,
             reportsKeymapAnyMatchers =
               reportsKeymapAnyMatchers rkm1 <> reportsKeymapAnyMatchers rkm2
           }
 
 instance Monoid ReportsKeyMap where
   mempty =
-    ReportsKeyMap
-      { reportsKeymapNextActionReportKeyMap = mempty,
-        reportsKeymapWaitingReportKeyMap = mempty,
-        reportsKeymapAnyMatchers = mempty
-      }
+    let ReportsKeyMap _ _ _ _ = undefined
+     in ReportsKeyMap
+          { reportsKeymapNextActionReportKeyMap = mempty,
+            reportsKeymapWaitingReportKeyMap = mempty,
+            reportsKeymapWorkReportKeyMap = mempty,
+            reportsKeymapAnyMatchers = mempty
+          }
 
 reportsKeyMapActions :: ReportsKeyMap -> [AnyAction]
 reportsKeyMapActions ReportsKeyMap {..} =
-  let ReportsKeyMap _ _ _ = undefined
+  let ReportsKeyMap _ _ _ _ = undefined
    in concat
         [ nextActionReportKeyMapActions reportsKeymapNextActionReportKeyMap,
           waitingReportKeyMapActions reportsKeymapWaitingReportKeyMap,
+          workReportKeyMapActions reportsKeymapWorkReportKeyMap,
           keyMappingsActions reportsKeymapAnyMatchers
         ]
 
@@ -298,6 +305,37 @@ waitingReportKeyMapActions WaitingReportKeyMap {..} =
         keyMappingsActions
         [ waitingReportMatchers,
           waitingReportAnyMatchers
+        ]
+
+data WorkReportKeyMap = WorkReportKeyMap
+  { workReportMatchers :: KeyMappings,
+    workReportAnyMatchers :: KeyMappings
+  }
+  deriving (Generic)
+
+instance Semigroup WorkReportKeyMap where
+  narkm1 <> narkm2 =
+    let WorkReportKeyMap _ _ = undefined
+     in WorkReportKeyMap
+          { workReportMatchers = workReportMatchers narkm1 <> workReportMatchers narkm2,
+            workReportAnyMatchers = workReportAnyMatchers narkm1 <> workReportAnyMatchers narkm2
+          }
+
+instance Monoid WorkReportKeyMap where
+  mappend = (<>)
+  mempty =
+    WorkReportKeyMap
+      { workReportMatchers = mempty,
+        workReportAnyMatchers = mempty
+      }
+
+workReportKeyMapActions :: WorkReportKeyMap -> [AnyAction]
+workReportKeyMapActions WorkReportKeyMap {..} =
+  let WorkReportKeyMap _ _ = undefined
+   in concatMap
+        keyMappingsActions
+        [ workReportMatchers,
+          workReportAnyMatchers
         ]
 
 keyMapHelpMatchers :: KeyMap -> KeyMappings
@@ -796,6 +834,9 @@ editorCursorSwitchToHelp km@KeyMap {..} ec =
                           ReportWaiting _ ->
                             let WaitingReportKeyMap {..} = reportsKeymapWaitingReportKeyMap
                              in ("Waiting Report", waitingReportMatchers ++ waitingReportAnyMatchers)
+                          ReportWork _ ->
+                            let WorkReportKeyMap {..} = reportsKeymapWorkReportKeyMap
+                             in ("Work Report", workReportMatchers ++ workReportAnyMatchers)
             HelpSelected -> Nothing, -- Should not happen
           editorCursorSelection = HelpSelected
         }
@@ -818,6 +859,7 @@ instance Validity EditorSelection
 data ReportCursor
   = ReportNextActions NextActionReportCursor
   | ReportWaiting WaitingReportCursor
+  | ReportWork WorkReportCursor
   deriving (Show, Eq, Generic)
 
 instance Validity ReportCursor

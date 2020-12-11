@@ -12,6 +12,7 @@ where
 import Brick.Types as B
 import Brick.Widgets.Core as B
 import Cursor.Brick
+import Cursor.Simple.Forest
 import Data.List
 import qualified Data.Map as M
 import Data.Text (Text)
@@ -163,7 +164,11 @@ drawWorkReportCursor _ (WorkReportCursor WorkReport {..}) = do
     formatStuckReportEntry _ se = [str (show se)]
     formatAsTable :: [[Widget n]] -> Widget n
     formatAsTable = tableWidget
-    entryTable = str . show
+    entryTable :: [(Path Rel File, ForestCursor Entry)] -> Widget n
+    entryTable = tableWidget . map (uncurry drawEntryTup)
+
+    drawEntryTup :: Path Rel File -> ForestCursor Entry -> [Widget n]
+    drawEntryTup rf e = [str (show rf), str (show e)]
 
 drawWaitingEntryCursor :: UTCTime -> Select -> WaitingEntryCursor -> [Widget ResourceName]
 drawWaitingEntryCursor now s WaitingEntryCursor {..} =

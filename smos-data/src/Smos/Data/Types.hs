@@ -567,9 +567,28 @@ validateTimestampNameChar :: Char -> Validation
 validateTimestampNameChar = validateHeaderChar
 
 data Timestamp
-  = TimestampDay Day
-  | TimestampLocalTime LocalTime
-  deriving (Show, Eq, Ord, Generic)
+  = TimestampDay !Day
+  | TimestampLocalTime !LocalTime
+  | TimestampZonedTime !ZonedTime
+  deriving (Show, Generic)
+
+instance Eq Timestamp where
+  TimestampDay d1 == TimestampDay d2 = d1 == d2
+  TimestampLocalTime lt1 == TimestampLocalTime lt2 = lt1 == lt2
+  TimestampZonedTime zt1 == TimestampZonedTime zt2 = zonedTimeToUTC zt1 == zonedTimeToUTC zt2
+  _ == _ = False
+
+instance Ord Timestamp where
+  compare ts1 ts2 = case (ts1, ts2) of
+    (TimestampDay d1, TimestampDay d2) -> compare d1 d2
+    (TimestampDay _, TimestampLocalTime _) -> LT
+    (TimestampDay _, TimestampZonedTime _) -> LT
+    (TimestampLocalTime lt1, TimestampLocalTime lt2) -> compare lt1 lt2
+    (TimestampLocalTime _, TimestampDay _) -> GT
+    (TimestampLocalTime _, TimestampZonedTime _) -> LT
+    (TimestampZonedTime zt1, TimestampZonedTime zt2) -> compare (zonedTimeToUTC zt1) (zonedTimeToUTC zt2)
+    (TimestampZonedTime _, TimestampDay _) -> GT
+    (TimestampZonedTime _, TimestampLocalTime _) -> GT
 
 instance Validity Timestamp
 
@@ -587,8 +606,9 @@ instance FromJSON Timestamp where
 instance YamlSchema Timestamp where
   yamlSchema =
     alternatives
-      [ TimestampDay <$> daySchema,
-        TimestampLocalTime <$> localTimeSchema
+      [ TimestampZonedTime <$> zonedTimeSchema,
+        TimestampLocalTime <$> localTimeSchema,
+        TimestampDay <$> daySchema
       ]
 
 daySchema :: YamlParser Day
@@ -603,6 +623,12 @@ localTimeSchema = maybeParser (parseTimeM True defaultTimeLocale timestampLocalT
 timestampLocalTimeFormat :: String
 timestampLocalTimeFormat = "%F %T%Q"
 
+zonedTimeSchema :: YamlParser ZonedTime
+zonedTimeSchema = maybeParser (parseTimeM True defaultTimeLocale timestampZonedTimeFormat) yamlSchema <?> T.pack timestampZonedTimeFormat
+
+timestampZonedTimeFormat :: String
+timestampZonedTimeFormat = "%F %T%Q%Ez"
+
 timestampLocalTimePrettyFormat :: String
 timestampLocalTimePrettyFormat = "%F %T"
 
@@ -611,6 +637,7 @@ timestampString ts =
   case ts of
     TimestampDay d -> formatTime defaultTimeLocale timestampDayFormat d
     TimestampLocalTime lt -> formatTime defaultTimeLocale timestampLocalTimeFormat lt
+    TimestampZonedTime zt -> formatTime defaultTimeLocale timestampZonedTimeFormat zt
 
 timestampText :: Timestamp -> Text
 timestampText = T.pack . timestampString
@@ -620,14 +647,16 @@ timestampPrettyString ts =
   case ts of
     TimestampDay d -> formatTime defaultTimeLocale timestampDayFormat d
     TimestampLocalTime lt -> formatTime defaultTimeLocale timestampLocalTimePrettyFormat lt
+    TimestampZonedTime zt -> formatTime defaultTimeLocale timestampZonedTimeFormat zt
 
 timestampPrettyText :: Timestamp -> Text
 timestampPrettyText = T.pack . timestampPrettyString
 
 parseTimestampString :: String -> Maybe Timestamp
 parseTimestampString s =
-  (TimestampDay <$> parseTimeM False defaultTimeLocale timestampDayFormat s)
+  (TimestampZonedTime <$> parseTimeM False defaultTimeLocale timestampZonedTimeFormat s)
     <|> (TimestampLocalTime <$> parseTimeM False defaultTimeLocale timestampLocalTimeFormat s)
+    <|> (TimestampDay <$> parseTimeM False defaultTimeLocale timestampDayFormat s)
 
 parseTimestampText :: Text -> Maybe Timestamp
 parseTimestampText = parseTimestampString . T.unpack
@@ -637,12 +666,14 @@ timestampDay ts =
   case ts of
     TimestampDay d -> d
     TimestampLocalTime (LocalTime d _) -> d
+    TimestampZonedTime (ZonedTime (LocalTime d _) _) -> d
 
 timestampLocalTime :: Timestamp -> LocalTime
 timestampLocalTime ts =
   case ts of
     TimestampDay d -> LocalTime d midnight
     TimestampLocalTime lt -> lt
+    TimestampZonedTime (ZonedTime lt _) -> lt
 
 newtype TodoState = TodoState
   { todoStateText :: Text

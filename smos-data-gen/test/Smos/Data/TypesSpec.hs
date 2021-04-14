@@ -44,6 +44,8 @@ spec = do
   genValidSpec @TimestampName
   jsonSpecOnValid @TimestampName
   textLikeJSONValid @TimestampName
+  eqSpecOnValid @Timestamp
+  ordSpecOnValid @Timestamp
   genValidSpec @Timestamp
   jsonSpecOnValid @Timestamp
   textLikeJSONValid @Timestamp

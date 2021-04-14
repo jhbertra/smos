@@ -88,8 +88,16 @@ genTimestampNameChar = choose (minBound, maxBound) `suchThat` validTimestampName
 instance GenUnchecked Timestamp
 
 instance GenValid Timestamp where
-  genValid = genValidStructurallyWithoutExtraChecking
   shrinkValid = shrinkValidStructurallyWithoutExtraFiltering
+
+  --genValid =
+  --  (`suchThat` isValid) $
+  --    oneof
+  --      [ TimestampDay <$> genValid,
+  --        TimestampLocalTime <$> genValid,
+  --        TimestampZonedTime <$> (ZonedTime <$> genValid <*> ((\tz -> tz {timeZoneMinutes = min 1440 $ max (-1440) $ timeZoneMinutes tz}) <$> genValid))
+  --      ]
+  genValid = genValidStructurallyWithoutExtraChecking
 
 instance GenValid TodoState where
   genValid = TodoState <$> genTextBy genTodoStateChar

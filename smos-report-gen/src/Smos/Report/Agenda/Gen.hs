@@ -25,6 +25,7 @@ instance GenValid AgendaTodayReport where
     let tsSetDay = \case
           TimestampDay _ -> TimestampDay d
           TimestampLocalTime (LocalTime _ tod) -> TimestampLocalTime (LocalTime d tod)
+          TimestampZonedTime (ZonedTime (LocalTime _ tod) tz) -> TimestampZonedTime (ZonedTime (LocalTime d tod) tz)
     let aes' = map (\ae -> ae {agendaEntryTimestamp = tsSetDay (agendaEntryTimestamp ae)}) aes
     pure AgendaTodayReport {agendaTodayReportEntries = sortAgendaEntries aes'}
 

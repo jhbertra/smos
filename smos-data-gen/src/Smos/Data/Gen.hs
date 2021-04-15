@@ -1,3 +1,4 @@
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 
@@ -9,6 +10,7 @@ import Data.GenValidity.Text
 import Data.GenValidity.Time ()
 import Data.List
 import Data.SemVer as Version
+import qualified Data.Text as T
 import Data.Time
 import Data.Word
 import Smos.Data
@@ -25,10 +27,8 @@ instance GenValid Version where
      in version <$> genComponent <*> genComponent <*> genComponent <*> pure [] <*> pure [] -- No identifiers for now
 
 instance GenValid SmosFile where
-  genValid = SmosFile <$> genValid
-  shrinkValid sf = do
-    f <- shrinkValid (smosFileForest sf)
-    pure $ sf {smosFileForest = f}
+  genValid = genValidStructurallyWithoutExtraChecking
+  shrinkValid = shrinkValidStructurallyWithoutExtraFiltering
 
 instance GenUnchecked a => GenUnchecked (ForYaml a)
 
@@ -88,16 +88,43 @@ genTimestampNameChar = choose (minBound, maxBound) `suchThat` validTimestampName
 instance GenUnchecked Timestamp
 
 instance GenValid Timestamp where
-  shrinkValid = shrinkValidStructurallyWithoutExtraFiltering
+  genValid =
+    (`suchThat` isValid) $
+      oneof
+        [ TimestampDay <$> genValid,
+          TimestampLocalTime <$> genValid,
+          TimestampZonedTime
+            <$> ( ZonedTime <$> genValid
+                    <*> ( ( \tz ->
+                              tz
+                                { -- Timezones with large offsets are not
+                                  -- round-trip-able so we limit it to 60*24-1.
+                                  -- These large offsets don't occur in
+                                  -- practice (because they cannot be parsed)
+                                  -- so that's fine.
+                                  timeZoneMinutes = min 1439 $ max (-1439) $ timeZoneMinutes tz,
+                                  -- Timezones with UTF16 suggorate codepoint
+                                  -- characters don't roundtrip either, in fact
+                                  -- they produce runtime exceptions. These
+                                  -- weird offsets don't occur in practice so
+                                  -- that's fine.
+                                  timeZoneName = T.unpack $ T.pack $ timeZoneName tz
+                                }
+                          )
+                            <$> genValid
+                        )
+                )
+        ]
 
-  --genValid =
-  --  (`suchThat` isValid) $
-  --    oneof
-  --      [ TimestampDay <$> genValid,
-  --        TimestampLocalTime <$> genValid,
-  --        TimestampZonedTime <$> (ZonedTime <$> genValid <*> ((\tz -> tz {timeZoneMinutes = min 1440 $ max (-1440) $ timeZoneMinutes tz}) <$> genValid))
-  --      ]
-  genValid = genValidStructurallyWithoutExtraChecking
+  -- A custom shrinker because we can shrink accross constructors
+  shrinkValid = \case
+    TimestampDay d -> TimestampDay <$> shrinkValid d
+    TimestampLocalTime lt ->
+      TimestampDay (localDay lt) :
+      (TimestampLocalTime <$> shrinkValid lt)
+    TimestampZonedTime zt ->
+      TimestampLocalTime (zonedTimeToLocalTime zt) :
+      (TimestampZonedTime <$> shrinkValid zt)
 
 instance GenValid TodoState where
   genValid = TodoState <$> genTextBy genTodoStateChar

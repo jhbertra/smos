@@ -49,14 +49,23 @@ spec = do
   genValidSpec @Timestamp
   jsonSpecOnValid @Timestamp
   textLikeJSONValid @Timestamp
+  shrinkValidSpecWithLimit @Timestamp 100
   describe "parseTimestampString" $
     it "parses whatever timestampString outputs" $
       forAllValid $
-        \ts -> parseTimestampString (timestampString ts) `shouldBe` Just ts
+        \ts ->
+          let rendered = timestampString ts
+           in case parseTimestampString rendered of
+                Nothing -> expectationFailure $ unwords ["Failed to parse:", show rendered, "to", show ts]
+                Just actual -> actual `shouldBe` ts
   describe "parseTimestampText" $
     it "parses whatever timestampText outputs" $
       forAllValid $
-        \ts -> parseTimestampText (timestampText ts) `shouldBe` Just ts
+        \ts ->
+          let rendered = timestampText ts
+           in case parseTimestampText rendered of
+                Nothing -> expectationFailure $ unwords ["Failed to parse:", show rendered, "to", show ts]
+                Just actual -> actual `shouldBe` ts
   genValidSpec @TodoState
   jsonSpecOnValid @TodoState
   textLikeJSONValid @TodoState
